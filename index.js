@@ -126,6 +126,17 @@ const rules = {
         warnOnce();
         return {};
       }
+
+      function reportIfMissingGenerics(node, name, expectedCount) {
+        // Simplified example to check and report missing generics
+        if (expectedCount > 0) { // Assuming generic types are always expected
+          context.report({
+            node,
+            message: `Tagged template literal '${name}' must be called with explicit generics.`,
+          });
+        }
+      }
+
       const expectedCountMap = createExpectedCountMap(context.options[0]);
       return {
         NewExpression: (node) => {
@@ -143,6 +154,14 @@ const rules = {
             expectedCountMap,
             nodeType: "Function"
           });
+        },
+        TaggedTemplateExpression(node) {
+          const tag = node.tag;
+          // Check if the tag is a function call or an identifier (e.g., QUERY``)
+          if (tag.type === 'Identifier' && expectedCountMap.has(tag.name)) {
+            const expectedCount = expectedCountMap.get(tag.name);
+            reportIfMissingGenerics(tag, tag.name, expectedCount);
+          }
         }
       };
     },
